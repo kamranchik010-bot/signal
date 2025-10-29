@@ -3,7 +3,7 @@
 
 import logging
 import threading
-import time 
+import time
 
 from telegram import Update, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -13,12 +13,12 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 # 1. BOT KONFIGURATSIYASI VA WEB APP MANZILI
 # ==============================================================================
 
-TOKEN = "8276019572:AAH8guAm9otOtGakG42eej46cb2rdhgyWGw" 
+TOKEN = "8276019572:AAH8guAm9otOtGakG42eej46cb2rdhgyWGw"
 
 # Web App manzili (GitHub Pages)
-# Eslatma: Bu manzil avval BotFather'da asosiy domenga, so'ngra
-# GitHub ombori nomiga va fayl nomiga ishora qilishi kerak.
-WEB_APP_URL = "https://kamranchik010-bot.github.io/gamehub/index.html" 
+# KESHNI TOZALASH UCHUN: Oxiriga "?v=2" qo'shildi. Bu manzilni har safar
+# o'zgartirsangiz (masalan, ?v=3), kesh majburan yangilanadi.
+WEB_APP_URL = "https://kamranchik010-bot.github.io/gamehub/index.html?v=2"
 
 # ==============================================================================
 # 2. LOGLARNI SOZLASH
@@ -40,11 +40,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Web App'ni ochish uchun tugma yaratish
     # XATO TUZATILDI: Endi to'g'ri WebAppInfo(url=WEB_APP_URL) ishlatildi
     web_app_info = WebAppInfo(url=WEB_APP_URL)
-    
+
     keyboard = [
         [
             InlineKeyboardButton(
-                "📈 Signal Markazini Ochish", 
+                "📈 Signal Markazini Ochish",
                 web_app=web_app_info
             )
         ]
@@ -70,24 +70,24 @@ def start_polling(application: Application):
 
 def main() -> None:
     """Botning asosiy ishga tushirish funksiyasi."""
-    
+
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start_command))
-    
+
     bot_thread = threading.Thread(
-        target=start_polling, 
-        args=(application,), 
-        daemon=True 
+        target=start_polling,
+        args=(application,),
+        daemon=True
     )
     bot_thread.start()
-    
+
     print("\n=======================================================")
     # XATO TUZATILDI: Print funksiyasida WEB_APP_URL o'zgaruvchisi ishlatildi
     print(f"SignalBot ishga tushirildi! Web App URL: {WEB_APP_URL}")
     print("Oynani yopmang, aks holda bot to'xtaydi.")
     print("=======================================================\n")
-    
+
     try:
         while True:
             time.sleep(1)
