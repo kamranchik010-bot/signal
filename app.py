@@ -1,16 +1,4 @@
 # app.py: Telegram bot kodi
-# Bu versiya Telegram Web App (TWA) ni ochish uchun tugma qo'shadi.
-
-import logging
-import threading
-import time 
-
-from telegram import Update, WebAppInfo
-from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.constants import ParseMode
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup # Tugmalar uchun
-
-# app.py: Telegram bot kodi
 # Fayl manzili: C:\Users\user\Desktop\SignalBot\app.py
 
 import logging
@@ -19,7 +7,6 @@ import time
 
 from telegram import Update, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.constants import ParseMode # ParseMode endi ishlatilmaydi
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 # ==============================================================================
@@ -28,8 +15,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 TOKEN = "8276019572:AAH8guAm9otOtGakG42eej46cb2rdhgyWGw" 
 
-# BotFatherda o'rnatilgan Web App URL.
-WEB_APP_URL = "https://kamranchik010-bot.github.io/gamehub/" 
+# Web App manzili (GitHub Pages)
+# Eslatma: Bu manzil avval BotFather'da asosiy domenga, so'ngra
+# GitHub ombori nomiga va fayl nomiga ishora qilishi kerak.
+WEB_APP_URL = "https://kamranchik010-bot.github.io/gamehub/index.html" 
 
 # ==============================================================================
 # 2. LOGLARNI SOZLASH
@@ -49,21 +38,22 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.info(f"Foydalanuvchi Web App tugmasini so'radi: {user.id}")
 
     # Web App'ni ochish uchun tugma yaratish
+    # XATO TUZATILDI: Endi to'g'ri WebAppInfo(url=WEB_APP_URL) ishlatildi
     web_app_info = WebAppInfo(url=WEB_APP_URL)
     
     keyboard = [
         [
             InlineKeyboardButton(
-                "▶️ O'yin markazini ochish", 
+                "📈 Signal Markazini Ochish", 
                 web_app=web_app_info
             )
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # reply_html ishlatilgani uchun 'parse_mode=...' ni olib tashladik.
+    # HTML xabar yuborish
     await update.message.reply_html(
-        rf"Assalomu Alaykum, {user.mention_html()}! SignalBot ishga tushirildi. O'yin markaziga kirish uchun pastdagi tugmani bosing:",
+        rf"Assalomu Alaykum, {user.mention_html()}! SignalBot ishga tushirildi. Signal markaziga kirish uchun pastdagi tugmani bosing:",
         reply_markup=reply_markup
     )
 
@@ -93,6 +83,7 @@ def main() -> None:
     bot_thread.start()
     
     print("\n=======================================================")
+    # XATO TUZATILDI: Print funksiyasida WEB_APP_URL o'zgaruvchisi ishlatildi
     print(f"SignalBot ishga tushirildi! Web App URL: {WEB_APP_URL}")
     print("Oynani yopmang, aks holda bot to'xtaydi.")
     print("=======================================================\n")

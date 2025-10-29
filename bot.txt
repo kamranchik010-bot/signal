@@ -3,71 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signal Bot O'yinlari</title>
+    <title>Signal Bot Markazi</title>
+    <!-- Telegram Web App Script -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS (Aesthetics) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #1e1e1e; color: white; }
-        .menu-btn {
-            background-color: #007bff; /* Moviy rang */
-            color: white;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--tg-theme-bg-color, #f0f4f8);
+            color: var(--tg-theme-text-color, #1f2937);
+            padding: 20px;
+        }
+
+        /* Umumiy konteyner uslubi */
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 24px;
+            border-radius: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Signal Tugmalari uslubi */
+        .signal-btn {
+            padding: 18px 25px;
             border: none;
-            padding: 15px 30px;
-            margin: 10px;
-            cursor: pointer;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 18px;
-            width: 80%;
-            max-width: 300px;
+            font-weight: 700;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .signal-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Signal Natijasi paneli */
+        .result-panel {
+            min-height: 150px;
+            background-color: var(--tg-theme-bg-color, #f9fafb);
+            border: 2px solid var(--tg-theme-button-color, #3b82f6);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.6;
+            text-align: center;
+        }
+        
+        .result-panel h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--tg-theme-hint-color, #6b7280);
+        }
+        
+        .mines-grid-display {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            width: 100%;
+            max-width: 250px; /* Maydonni markazga olish */
+            margin: 10px auto;
+        }
+        .mines-grid-display > span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            font-size: 22px;
+            border-radius: 4px;
+        }
+
+        /* Roulette uslublari */
+        .roulette-display {
+            font-size: 40px;
+            font-weight: 800;
+            margin-top: 15px;
+        }
+        .roulette-color {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
 <body>
-    <h1>Signal Bot Menyu</h1>
-    <p>O'yin signalini olish uchun tanlang:</p>
-    
-    <button class="menu-btn" onclick="getSignal('mines')">💣 MINES Signali (3 bomba)</button>
-    <button class="menu-btn" onclick="getSignal('roulette')">🔴⚫ ROULETTE Signali</button>
-    <button class="menu-btn" onclick="getSignal('gems')">💎 GEMS Signali (2 olmos)</button>
 
-    <div id="signal_output" style="margin-top: 30px; font-size: 20px; font-weight: bold;">
-        Signal kutilyapti...
+    <div class="container">
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-gray-800" style="color: var(--tg-theme-text-color);">
+            Signal Bot Markazi
+        </h1>
+        
+        <div class="space-y-4">
+            <button class="signal-btn" style="background-color: #10b981;" onclick="generateSignal('mines')">
+                💣 Mines Signali
+            </button>
+            <button class="signal-btn" style="background-color: #f59e0b;" onclick="generateSignal('gems')">
+                💎 Gems Signali
+            </button>
+            <button class="signal-btn" style="background-color: #3b82f6;" onclick="generateSignal('roulette')">
+                🔴 Roulette Signali
+            </button>
+        </div>
+
+        <div id="result-area" class="result-panel mt-6">
+            <h3>Signal berish uchun tugmani bosing...</h3>
+        </div>
+        
     </div>
 
-    <script>
-        const signalOutput = document.getElementById('signal_output');
+<script>
+    const tg = window.Telegram.WebApp;
+    
+    // --- SIGNAL GENERATORLARI ---
 
-        function getSignal(game) {
-            signalOutput.innerHTML = `⏳ **${game.toUpperCase()}** o'yini uchun signal tayyorlanmoqda...`;
-            
-            // Hozircha bu yerda faqatgina tasodifiy (random) signal yaratamiz
-            setTimeout(() => {
-                let signal;
-                if (game === 'mines') {
-                    // MINES: 25 ta katak ichidan 5 ta xavfsiz katakni tasodifiy tanlash
-                    const safe_cells = Array.from({length: 25}, (_, i) => i + 1)
-                                            .sort(() => 0.5 - Math.random())
-                                            .slice(0, 5)
-                                            .join(', ');
-                    signal = `✅ Xavfsiz kataklar: ${safe_cells}. Avto-tikishga o'ting!`;
-
-                } else if (game === 'roulette') {
-                    // ROULETTE: Qizil yoki Qora
-                    const colors = ['🔴 Qizil', '⚫ Qora'];
-                    const chosen_color = colors[Math.floor(Math.random() * colors.length)];
-                    signal = `🔥 Hozirgi signal: **${chosen_color}** ga tiking!`;
-                    
-                } else if (game === 'gems') {
-                    // GEMS: 3 ta katakdan 2 ta olmos (masalan, 1-katak, 3-katak olmos)
-                    const gems_cells = Array.from({length: 3}, (_, i) => i + 1)
-                                            .sort(() => 0.5 - Math.random())
-                                            .slice(0, 2)
-                                            .join(' va ');
-                    signal = `💎 Olmoslar joylashuvi: **${gems_cells}**-katak. Uchinchi katak bo'sh.`;
-                }
-
-                signalOutput.innerHTML = signal;
-            }, 1500); // 1.5 soniyadan keyin signalni ko'rsatish
+    // Array ichidan tasodifiy noyob pozitsiyalarni tanlash
+    function getRandomUniquePositions(max, count) {
+        const positions = [];
+        while (positions.length < count) {
+            const pos = Math.floor(Math.random() * max);
+            if (!positions.includes(pos)) {
+                positions.push(pos);
+            }
         }
-    </script>
+        return positions;
+    }
+
+    function generateMinesSignalHTML() {
+        const GRID_SIZE = 5;
+        const NUM_SAFE = 3; 
+        const safe_spots = getRandomUniquePositions(GRID_SIZE * GRID_SIZE, NUM_SAFE);
+        
+        let gridHTML = '<div class="mines-grid-display">';
+        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+            const isSafe = safe_spots.includes(i);
+            const content = isSafe ? '✅' : '❌'; 
+            // Tailwind yordamida chizish
+            const bgColor = isSafe ? 'bg-green-500' : 'bg-red-500';
+            const shadow = isSafe ? 'shadow-lg shadow-green-700/50' : 'shadow-lg shadow-red-700/50';
+
+            gridHTML += `<span class="${bgColor} text-white ${shadow}">${content}</span>`;
+        }
+        gridHTML += '</div>';
+
+        const message = `
+            💣 <b>MINES UCHUN TASODIFIY SIGNAL</b> 💣
+            <br><span class="text-xs text-gray-500">(25x25 maydon, 3 ta xavfsiz ✅)</span>
+            ${gridHTML}
+            <br>
+            <div class="flex justify-around text-sm font-semibold">
+                <span class="text-green-600">✅ Xavfsiz</span>
+                <span class="text-red-600">❌ Xavfli</span>
+            </div>
+        `;
+        return message;
+    }
+
+    function generateGemsSignalHTML() {
+        const GRID_SIZE = 3;
+        const safe_spot = Math.floor(Math.random() * GRID_SIZE); // 0, 1, yoki 2
+        
+        let displayHTML = '<div class="flex justify-center space-x-3 mt-4">';
+        for (let i = 0; i < GRID_SIZE; i++) {
+            const isSafe = (i === safe_spot);
+            const content = isSafe ? '✅' : '🟦';
+            const bgColor = isSafe ? 'bg-green-500' : 'bg-blue-500';
+            const shadow = isSafe ? 'shadow-lg shadow-green-700/50' : 'shadow-lg shadow-blue-700/50';
+
+            displayHTML += `<span class="text-3xl p-3 rounded-xl ${bgColor} text-white ${shadow}">${content}</span>`;
+        }
+        displayHTML += '</div>';
+        
+        const message = `
+            💎 <b>GEMS UCHUN TASODIFIY SIGNAL</b> 💎
+            <br><span class="text-xs text-gray-500">(3 ta katakdan 1 tasi xavfsiz ✅)</span>
+            ${displayHTML}
+            <br>
+            <div class="mt-3 text-base font-semibold">
+                ✅ Yashil ptichka aniqlandi!
+            </div>
+        `;
+        return message;
+    }
+
+    function generateRouletteSignalHTML() {
+        const colors = ['🔴 Qizil', '⚫️ Qora'];
+        const weights = [0.55, 0.45]; // Tikish uchun biroz yuqori ehtimollik berishimiz mumkin
+        
+        // Tasodifiy rangni tanlash (eng oddiy yo'li)
+        const recommendedColorIndex = Math.random() < 0.5 ? 0 : 1;
+        const recommendedColor = colors[recommendedColorIndex];
+        
+        // Yana bir ehtimollik signali (masalan, 80% hollarda to'g'ri)
+        const isStrongSignal = Math.random() < 0.8; 
+        
+        let colorDisplayHTML = `<span class="roulette-color ${recommendedColorIndex === 0 ? 'bg-red-600' : 'bg-black'}">
+                                    ${recommendedColor}
+                                </span>`;
+
+        const message = `
+            🔴 <b>ROULETTE UCHUN SIGNAL</b> ⚫️
+            <br><span class="text-xs text-gray-500">(Qizil / Qora)</span>
+            <div class="roulette-display flex justify-center items-center space-x-2">
+                TIKISH: ${colorDisplayHTML}
+            </div>
+            <div class="mt-4 text-sm font-semibold text-gray-700">
+                <span class="${isStrongSignal ? 'text-green-600' : 'text-yellow-600'}">
+                    ${isStrongSignal ? 'Kafolat: 80% muvaffaqiyat ehtimoli.' : 'Ehtiyot bo\'ling: oddiy signal.'}
+                </span>
+            </div>
+        `;
+        return message;
+    }
+
+    // --- ASOSIY FUNKSIYA ---
+
+    function generateSignal(type) {
+        tg.HapticFeedback.impactOccurred('light');
+        const resultArea = document.getElementById('result-area');
+        let signalHTML = '';
+        let title = '';
+
+        // Natija maydonini tozalash va yuklanish effektini berish
+        resultArea.innerHTML = '<h3>Signal yaratilmoqda... 🕒</h3>';
+
+        // 500ms dan keyin signalni ko'rsatish (UX uchun)
+        setTimeout(() => {
+            switch(type) {
+                case 'mines':
+                    title = "💣 Mines Signali";
+                    signalHTML = generateMinesSignalHTML();
+                    break;
+                case 'gems':
+                    title = "💎 Gems Signali";
+                    signalHTML = generateGemsSignalHTML();
+                    break;
+                case 'roulette':
+                    title = "🔴 Roulette Signali";
+                    signalHTML = generateRouletteSignalHTML();
+                    break;
+                default:
+                    signalHTML = '<h3>Noma\'lum signal turi.</h3>';
+            }
+
+            // Natijani DOMga joylashtirish
+            resultArea.innerHTML = signalHTML;
+            
+            // Telegram Main Button'ni yangilash (agar kerak bo'lsa)
+            // Hozirda faqat UXni yaxshilaymiz
+            tg.HapticFeedback.notificationOccurred('success');
+
+        }, 500);
+    }
+
+    // --- WEB APP INIT ---
+    tg.ready();
+    tg.expand();
+    
+    // Telegram temasi ranglaridan foydalanish
+    document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
+    document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color);
+    document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color);
+    document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
+    
+</script>
+
 </body>
 </html>
