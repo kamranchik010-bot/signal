@@ -7,7 +7,7 @@ TOKEN = "8215882181:AAGT57dC8PGxlTOjYsZOABysBzMvksKw2yQ"
 
 # GitHub Pages'ga joylashtirilgan Web App (index.html) ning URL manzili
 # MUHIM: Bu manzilni o'zingizning GitHub Pages manzilingiz bilan tasdiqlang
-WEB_APP_URL = "https://kamranchik010-bot.github.io/signalxbet/index.html" 
+WEB_APP_URL = "https://kamranchik010-bot.github.io/signalxbet/" 
 
 # Botni ishga tushirish
 bot = telebot.TeleBot(TOKEN)
