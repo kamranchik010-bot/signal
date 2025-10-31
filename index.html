@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Bot Markazi | Protokol: 1x_3746063</title>
+    <!-- Tailwind CSS yuklash -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons yuklash -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #0d0d1a; /* To'q fiolet */
+        }
+        .font-mono-extended {
+             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        .signal-grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.25rem; /* gap-1 */
+        }
+    </style>
+    <!-- Lucide Icons uchun JavaScript funksiyasi (chunki React'da emas) -->
+    <script>
+        function getIcon(name, size = 20, className = "") {
+            const icons = {
+                Server: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6" y1="6" y2="6"/><line x1="6" x2="6" y1="18" y2="18"/></svg>',
+                Lock: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+                ExternalLink: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+                Loader: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><path d="M12 2v4"/><path d="m16.2 7.8 2.8-2.8"/><path d="M18 12h4"/><path d="m16.2 16.2 2.8 2.8"/><path d="M12 18v4"/><path d="m7.8 16.2-2.8 2.8"/><path d="M6 12H2"/><path d="m7.8 7.8-2.8-2.8"/></svg>',
+                CheckCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+                X: '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+className+'"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+            };
+            return icons[name] || '';
+        }
+    </script>
+
+    <!-- Firebase SDK'larni yuklash (Type='module' orqali) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase va boshqa global o'zgaruvchilar
+        window.PROMO_CODE = "1x_3746063";
+        window.FULL_REG_URL = "https://example.com/register/uzbekistan";
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let firebaseConfig = {};
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config !== "") {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        } catch (e) {
+            console.warn("Firebase Config o'qilmadi. Minimal konfiguratsiyadan foydalanilmoqda.");
+        }
+
+        if (!firebaseConfig.projectId) {
+            firebaseConfig.projectId = 'default-twa-project';
+        }
+
+        window.initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        window.isFirebaseActive = true; 
+        window.db = null;
+        window.auth = null;
+
+        try {
+            // 1. App'ni boshlash
+            const app = initializeApp(firebaseConfig);
+            
+            // 2. Firestore'ni boshlash
+            window.db = getFirestore(app);
+
+            // 3. Auth'ni boshlash
+            window.auth = getAuth(app);
+            
+            console.log("Firebase muvaffaqiyatli boshlandi.");
+        } catch (e) {
+            console.error("KRITIK: Firebase Auth Boshlanmadi (invalid-api-key bo'lishi mumkin). Mock avtorizatsiya va FireStore'ni o'chirib qo'yishga o'tilmoqda.", e);
+            window.isFirebaseActive = false;
+            
+            // Mock obyektlar
+            window.auth = { isMock: true, currentUser: { uid: 'mock-' + (typeof crypto !== 'undefined' ? crypto.randomUUID() : 'anon-user') } };
+            window.db = { isMock: true }; 
+        }
+
+        // --- AUTH AND STATUS LOGIC ---
+        
+        // Auth holatini tinglash funksiyasi
+        window.setupAuthListener = function() {
+            if (!window.isFirebaseActive) {
+                // Oflayn rejim: Mock userId
+                window.userId = window.auth.currentUser.uid;
+                window.renderApp(); 
+                document.getElementById('message-box').innerHTML = `
+                    <div class="my-4 p-3 bg-yellow-900/50 text-yellow-300 rounded-lg font-semibold border border-yellow-400 max-w-lg mx-auto text-center">
+                        :: OFLAYN REJIM :: Firebase xatosi tufayli ma'lumotlar saqlanmaydi. Avtorizatsiya tekshiruvi O'CHIQ.
+                    </div>`;
+                return;
+            }
+
+            // Auth holatini tinglash
+            onAuthStateChanged(window.auth, (user) => {
+                const uid = user ? user.uid : (typeof crypto !== 'undefined' ? crypto.randomUUID() : 'anon-user');
+                window.userId = uid;
+                window.setupStatusListener(); // Status tinglovchisini yoqish
+            });
+
+            // Avtorizatsiya
+            (async () => {
+                try {
+                    if (window.initialAuthToken) {
+                        await signInWithCustomToken(window.auth, window.initialAuthToken);
+                    } else {
+                        await signInAnonymously(window.auth);
+                    }
+                } catch (e) {
+                    console.error("Firebase Auth Xatosi (Kirish):", e);
+                }
+            })();
+        }
+
+        // Ro'yxatdan O'tish Holatini (isRegistered) Yuklash/Tinglash funksiyasi
+        window.setupStatusListener = function() {
+            if (!window.userId) return;
+            
+            if (!window.isFirebaseActive || window.db.isMock) {
+                // Mock rejimda renderApp() chaqiriladi
+                window.isRegistered = false; 
+                window.renderApp(); 
+                return;
+            }
+
+            const getUserStatusPath = (uid) => `artifacts/${window.appId}/users/${uid}/signal_status`;
+            const userDocRef = doc(window.db, getUserStatusPath(window.userId), 'status');
+
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    window.isRegistered = data.isRegistered || false;
+                } else {
+                    window.isRegistered = false;
+                }
+                window.renderApp(); // Holat o'zgarganda sahifani qayta chizish
+            }, (error) => {
+                console.error("Foydalanuvchi holati yuklanmadi:", error);
+                window.isRegistered = false; 
+                window.renderApp();
+            });
+        }
+        
+        // Ilovani yuklash
+        window.addEventListener('load', () => {
+             document.getElementById('app-container').innerHTML = window.renderLoadingScreen(":: TIZIM ISHGA TUSHIRILMOQDA ::");
+             window.setupAuthListener();
+        });
+
+        // Ro'yxatdan o'tish tugmasi mantiqi (Global funksiya)
+        window.handleRegisterClick = async function(isConfirm = false) {
+            const messageBox = document.getElementById('message-box');
+            if (!window.userId) {
+                window.displayMessage("Iltimos, avval avtorizatsiya tugashini kuting.", 'error');
+                return;
+            }
+            
+            if (isConfirm) {
+                if (!window.isFirebaseActive || window.db.isMock) {
+                    window.isRegistered = true;
+                    window.displayMessage(":: PROTOKOL AKTIV (VAQTINCHA) :: Ro'yxatdan o'tganligingiz tasdiqlandi. Signallar faol. Ammo Firebase xatosi tufayli holat saqlanmaydi.", 'success');
+                    window.renderApp();
+                    return;
+                }
+
+                if (window.isRegistered) {
+                    window.displayMessage(":: KIRISH RUHSATI :: Siz allaqachon ro'yxatdan o'tgansiz.", 'success');
+                    return;
+                }
+                
+                const getUserStatusPath = (uid) => `artifacts/${window.appId}/users/${uid}/signal_status`;
+                const userDocRef = doc(window.db, getUserStatusPath(window.userId), 'status');
+                
+                try {
+                    await setDoc(userDocRef, { isRegistered: true, registrationDate: new Date().getTime(), promo: window.PROMO_CODE }, { merge: true });
+                    window.displayMessage(":: PROTOKOL AKTIV :: Ro'yxatdan o'tganligingiz tasdiqlandi. Signallar faol.", 'success');
+                } catch (e) {
+                    window.displayMessage(":: XATO :: Holatni saqlashda muammo yuz berdi. Iltimos, qayta urinib ko'ring.", 'error');
+                    console.error("SetDoc xatosi:", e);
+                }
+
+            } else {
+                window.open(window.FULL_REG_URL, '_blank');
+                window.displayMessage(`:: ALOQA O'RNATILDI :: Promokod: ${window.PROMO_CODE} avtomatik kiritilgan. Ro'yxatdan so'ng "Tasdiq" tugmasini bosing.`, 'info');
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen">
+    <div id="app-container" class="min-h-screen">
+        <!-- Bu yerga ilova kontenti render qilinadi -->
+    </div>
+    
+    <div id="message-box" class="fixed bottom-0 left-0 right-0 p-4 z-50">
+        <!-- Bu yerga ogohlantirishlar chiqadi -->
+    </div>
+
+    <script>
+        // --- GLOBAL HOLATNI BOSHQARISH (JS) ---
+        let globalState = {
+            message: '',
+            isLoading: false,
+            appleLevels: [],
+            appleIndex: 0,
+            swampLevels: [],
+            swampIndex: 0,
+            activeGame: 'apple', // 'apple' yoki 'swamp'
+        };
+
+        // --- YORDAMCHI FUNKSIYALAR ---
+        
+        // Ogohlantirish xabarini chiqarish
+        window.displayMessage = function(text, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            let bgColor = 'bg-blue-900/50';
+            let textColor = 'text-blue-300';
+            let borderColor = 'border-blue-400';
+            
+            if (type === 'error') { bgColor = 'bg-red-900/50'; textColor = 'text-red-300'; borderColor = 'border-red-400'; }
+            if (type === 'success') { bgColor = 'bg-green-900/50'; textColor = 'text-green-300'; borderColor = 'border-green-400'; }
+
+            globalState.message = text;
+
+            messageBox.innerHTML = `
+                <div class="p-3 ${bgColor} ${textColor} rounded-lg font-semibold border ${borderColor} max-w-lg mx-auto text-center transition-all duration-300">
+                    ${text}
+                </div>
+            `;
+            setTimeout(() => {
+                messageBox.innerHTML = '';
+                globalState.message = '';
+            }, 5000); // 5 sekunddan keyin yopiladi
+        }
+        
+        // Signal Generatorlari (React faylidan ko'chirilgan)
+        function generateAppleFortuneSignal() {
+            const multipliers = [1.23, 1.54, 1.93, 2.41, 4.02, 6.71, 11.18, 27.97, 69.93, 349.68]; 
+            return multipliers.map((multiplier, index) => ({
+                id: index,
+                multiplier: `x${multiplier.toFixed(2)}`, 
+                signalColumn: Math.floor(Math.random() * 5) + 1, // 1 dan 5 gacha
+            }));
+        }
+
+        function generateSwampLandSignal() {
+            const multipliers = [1.3, 2.17, 5.43, 27.16]; 
+            return multipliers.map((multiplier, index) => ({
+                id: index,
+                multiplier: `x${multiplier.toFixed(2)}`, 
+                signalColumn: Math.floor(Math.random() * 5) + 1, // 1 dan 5 gacha
+            }));
+        }
+
+        // Ilk yuklanishda signallarni yaratish
+        globalState.appleLevels = generateAppleFortuneSignal();
+        globalState.swampLevels = generateSwampLandSignal();
+
+
+        // --- SIGNAL BOSHQARUVCHI FUNKSIYALAR ---
+
+        window.handleNextSignal = function(gameId) {
+            if (!window.isRegistered) {
+                window.displayMessage(":: OGOHLANTIRISH :: Signal olish uchun avval ro'yxatdan o'tganligingizni tasdiqlang!", 'error');
+                return;
+            }
+
+            let currentIndex, total, setIndex, gameName, setLevels, generateFunction;
+
+            if (gameId === 'apple') {
+                currentIndex = globalState.appleIndex;
+                total = globalState.appleLevels.length;
+                setIndex = (newIndex) => globalState.appleIndex = newIndex;
+                setLevels = (newLevels) => globalState.appleLevels = newLevels;
+                generateFunction = generateAppleFortuneSignal;
+                gameName = "APPLE_FORTUNE";
+            } else {
+                currentIndex = globalState.swampIndex;
+                total = globalState.swampLevels.length;
+                setIndex = (newIndex) => globalState.swampIndex = newIndex;
+                setLevels = (newLevels) => globalState.swampLevels = newLevels;
+                generateFunction = generateSwampLandSignal;
+                gameName = "SWAMP_LAND";
+            }
+            
+            if (currentIndex >= total) {
+                window.displayMessage(`:: TUGADI :: ${gameName} uchun barcha ${total} Level signallari chiqarildi. Yangi seriya yaratilmoqda...`, 'info');
+                setLevels(generateFunction()); 
+                setIndex(0); 
+                globalState.isLoading = true; 
+                window.renderApp(); 
+                
+                setTimeout(() => {
+                    setIndex(1); 
+                    globalState.isLoading = false;
+                    window.displayMessage(`:: SIGNAL TAYYOR :: Qator 1 signali chiqarildi. Yangi seriya boshlandi!`, 'success');
+                    window.renderApp();
+                }, 3000);
+                return;
+            }
+
+            if (currentIndex < total) {
+                globalState.isLoading = true;
+                window.displayMessage(`:: JARAYONDA :: Keyingi qator signali uchun 3 sekund kuting...`, 'info');
+                window.renderApp();
+
+                setTimeout(() => {
+                    setIndex(currentIndex + 1);
+                    globalState.isLoading = false;
+                    window.displayMessage(`:: SIGNAL TAYYOR :: Qator ${currentIndex + 2} signali chiqarildi.`, 'success');
+                    window.renderApp();
+                }, 3000); 
+            }
+        };
+
+        window.handleResetSignals = function(gameId) {
+            if (!window.isRegistered) {
+                window.displayMessage(":: XATO :: Qayta boshlash uchun avval ro'yxatdan o'tganligingizni tasdiqlang!", 'error');
+                return;
+            }
+
+            globalState.isLoading = false; 
+            
+            if (gameId === 'apple') {
+                globalState.appleLevels = generateAppleFortuneSignal();
+                globalState.appleIndex = 0;
+                window.displayMessage(":: QAYTA YUKLASH :: APPLE_FORTUNE signallari yangilandi. Yangi seriya boshlandi!", 'success');
+            } else {
+                globalState.swampLevels = generateSwampLandSignal();
+                globalState.swampIndex = 0;
+                window.displayMessage(":: QAYTA YUKLASH :: SWAMP_LAND signallari yangilandi. Yangi seriya boshlandi!", 'success');
+            }
+            window.renderApp();
+        };
+
+        window.setActiveGame = function(gameId) {
+            globalState.activeGame = gameId;
+            window.renderApp();
+        };
+
+
+        // --- RENDERING FUNKSIYALARI (UI komponentlari) ---
+
+        window.renderLoadingScreen = function(message) {
+            return `
+                <div class="flex items-center justify-center min-h-screen bg-gray-950 text-white font-mono-extended">
+                    <div class="text-center p-8 bg-gray-900 rounded-xl shadow-xl border-2 border-green-500">
+                        <div class="flex items-center justify-center mb-4">
+                            ${getIcon('Server', 32, 'text-green-400 animate-pulse mr-2')}
+                            <p class="text-xl font-semibold text-green-300">${message}</p>
+                        </div>
+                        <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-green-500 animate-[pulse_2s_infinite]" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.renderRegistrationGate = function() {
+            return `
+                <div class="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-6 text-white text-center">
+                    ${getIcon('Lock', 64, 'text-red-500 mb-4 animate-pulse')}
+                    <h1 class="text-3xl font-extrabold text-green-400 mb-2 font-mono-extended">:: KIRISH TA'QIQI ::</h1>
+                    <p class="text-lg text-gray-300 mb-6">
+                        Tizim signallarini qabul qilish uchun Protokolni faollashtirishingiz shart.
+                    </p>
+
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-green-500 w-full max-w-sm">
+                        <p class="text-sm font-semibold text-gray-400 mb-2">Majburiy Protokol:</p>
+                        <p class="text-xl font-bold text-red-400 mb-3 font-mono-extended">PROMO: ${window.PROMO_CODE}</p>
+                        
+                        <button
+                            onclick="window.handleRegisterClick(false)"
+                            class="w-full flex items-center justify-center py-3 bg-green-600 hover:bg-green-700 text-black font-extrabold rounded-xl shadow-xl transition transform hover:scale-[1.02] mb-3"
+                        >
+                            ${getIcon('ExternalLink', 20, 'mr-2 text-black')}
+                            Ro'yxatdan O'tish Va Protokolni Aktivlash
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 w-full max-w-sm">
+                        <button
+                            onclick="window.handleRegisterClick(true)"
+                            class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition"
+                        >
+                            ${getIcon('CheckCircle', 20, 'inline mr-2')}
+                            Protokol Tasdiqlangan (Ro'yxatdan O'tdim)
+                        </button>
+                    </div>
+                    
+                </div>
+            `;
+        }
+
+        window.renderMatrixSignalCard = function(gameId) {
+            const isAppleFortune = gameId === "apple";
+            const gameName = isAppleFortune ? "APPLE_FORTUNE" : "SWAMP_LAND";
+            const allLevels = isAppleFortune ? globalState.appleLevels : globalState.swampLevels;
+            const currentLevelIndex = isAppleFortune ? globalState.appleIndex : globalState.swampIndex;
+            const totalLevels = allLevels.length;
+            const isFinished = currentLevelIndex >= totalLevels;
+            const isLoading = globalState.isLoading;
+
+            const renderRow = (level, index) => {
+                const isCurrent = index === currentLevelIndex;
+                const isVisible = index <= currentLevelIndex;
+                const columnSignal = level.signalColumn; 
+                const item = isAppleFortune ? "🍎" : "🐸";
+                
+                if (!isVisible) {
+                    return `
+                        <div class="flex items-center text-gray-700 py-1 transition-all duration-300">
+                            <div class="w-1/6 text-right font-mono-extended pr-2 opacity-50">${level.multiplier}</div>
+                            <div class="flex-1 signal-grid-container">
+                                ${Array(5).fill(0).map((_, colIndex) => (
+                                    `<div class="h-8 bg-gray-900 border border-gray-800 rounded-sm"></div>`
+                                )).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (isCurrent && isLoading) {
+                    return `
+                        <div class="flex items-center py-1 transition-all duration-300 bg-green-900/10 border-l-4 border-green-500 animate-pulse">
+                            <div class="w-1/6 text-right font-mono-extended pr-2 text-green-500">${level.multiplier}</div>
+                            <div class="flex-1 signal-grid-container">
+                                ${Array(5).fill(0).map((_, colIndex) => (
+                                    `<div class="h-8 bg-gray-800 flex items-center justify-center text-sm text-yellow-500">
+                                        ${getIcon('Loader', 16, 'animate-spin')}
+                                    </div>`
+                                )).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div 
+                        class="flex items-center py-1 transition-all duration-500 
+                        ${isCurrent ? 'bg-green-900/20 border-l-4 border-green-400 shadow-lg shadow-green-900/50' : 'border-l-4 border-transparent'}"
+                    >
+                        <div class="w-1/6 text-right font-mono-extended pr-2 ${isCurrent ? 'text-yellow-400 font-bold' : 'text-green-500'}">
+                            ${level.multiplier}
+                        </div>
+                        <div class="flex-1 signal-grid-container">
+                            ${Array(5).fill(0).map((_, colIndex) => {
+                                const isSignal = colIndex + 1 === columnSignal;
+                                
+                                return `
+                                    <div 
+                                        class="h-8 flex items-center justify-center rounded-sm transition-all duration-300 text-2xl
+                                        ${isSignal 
+                                            ? isCurrent ? 'bg-green-700/50 border-2 border-green-400 shadow-xl shadow-green-700' : 'bg-green-800/20 border-2 border-green-600'
+                                            : 'bg-gray-900 border border-gray-800'}"
+                                    >
+                                        ${isSignal ? item : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            };
+
+            return `
+                <div class="w-full max-w-xl mx-auto font-mono-extended text-white bg-gray-900/90 rounded-xl shadow-2xl border-2 border-green-700 overflow-hidden">
+                    
+                    <div class="bg-gray-950 p-3 flex justify-between items-center border-b border-green-700/50">
+                        <div class="flex items-center">
+                            <span class="text-lg font-bold text-green-400 mr-2">:: ${gameName} :: ALGORITMI</span>
+                        </div>
+                        <span class="text-xs text-gray-500">HIMOYALANGAN HACKING REJIMI ${getIcon('Lock', 12, 'inline text-green-500')}</span>
+                    </div>
+
+                    <div class="p-3 border-b border-green-700/50">
+                        <div class="flex items-center bg-green-900/30 p-2 rounded-md border border-green-700">
+                            ${getIcon('Lock', 16, 'text-green-400 mr-2')}
+                            <span class="text-sm font-semibold text-green-300">
+                                Signal Aniqlangan: QATOR ${currentLevelIndex > totalLevels ? totalLevels : currentLevelIndex} / ${totalLevels}
+                            </span>
+                            ${getIcon('Lock', 16, 'text-green-400 ml-auto')}
+                        </div>
+                    </div>
+
+                    <div class="p-4 space-y-1">
+                        ${allLevels.map(renderRow).join('')}
+                    </div>
+
+                    <div class="p-4 bg-gray-950 flex space-x-3 border-t border-green-700/50">
+                        <button
+                            onclick="window.handleNextSignal('${gameId}')"
+                            ${isLoading || isFinished ? 'disabled' : ''}
+                            class="flex-1 py-3 text-white font-bold rounded-lg shadow-md transition transform hover:scale-[1.02] flex items-center justify-center 
+                                ${isLoading || isFinished
+                                    ? 'bg-gray-700 cursor-not-allowed text-gray-400' 
+                                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-800/50'}"
+                        >
+                            ${isLoading ? (
+                                `${getIcon('Loader', 20, 'mr-1 animate-spin')} KUTING...`
+                            ) : (
+                                `<span class="text-lg">▶ KEYINGI QATOR</span>`
+                            )}
+                        </button>
+                        <button
+                            onclick="window.handleResetSignals('${gameId}')"
+                            class="py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-md transition transform hover:scale-[1.02]"
+                            title="Signallarni Qayta Boshlash"
+                        >
+                            <span class="text-lg">↻ QAYTA BOSHLASH</span>
+                        </button>
+                    </div>
+                    
+                    ${isFinished ? (
+                        `<div class="bg-green-900/50 p-3 text-center text-green-300 font-semibold border-t border-green-700">
+                            ✅ Barcha ${totalLevels} qator signallari chiqarildi. QAYTA BOSHLASH tugmasini bosing.
+                        </div>`
+                    ) : ''}
+                </div>
+            `;
+        }
+
+        // --- ASOSIY RENDER FUNKSIYASI ---
+
+        window.renderApp = function() {
+            const container = document.getElementById('app-container');
+
+            if (!window.userId) {
+                // Hali ham Auth'ni kutayotgan bo'lishi mumkin
+                container.innerHTML = window.renderLoadingScreen(":: TIZIM ISHGA TUSHIRILMOQDA ::");
+                return;
+            }
+
+            if (!window.isRegistered) {
+                container.innerHTML = window.renderRegistrationGate();
+                return;
+            }
+            
+            // ASOSIY SAHIFA RENDER
+            const activeGameId = globalState.activeGame;
+            const signalCard = window.renderMatrixSignalCard(activeGameId);
+
+            container.innerHTML = `
+                <div class="bg-gray-900 min-h-screen pb-10 p-4 font-mono-extended text-white">
+                    <header class="py-4 bg-gray-900 sticky top-0 z-10 text-center border-b border-green-700/50">
+                        <h1 class="text-3xl font-black text-green-500 flex items-center justify-center animate-pulse">
+                            ${getIcon('Server', 28, 'mr-2')} UZ-SIGNAL ALGORITMI
+                        </h1>
+                        <p class="text-sm text-gray-500 mt-1">
+                            PROMO: <span class="text-red-400">${window.PROMO_CODE}</span> | <span class="text-green-400">HOLAT: AKTIV</span>
+                        </p>
+                        ${!window.isFirebaseActive ? `
+                            <p class="text-xs text-yellow-500 mt-1">
+                                [OFLAYN REJIM] Ma'lumotlar saqlanmaydi. (Firebase Xatosi)
+                            </p>` : ''
+                        }
+                    </header>
+                    
+                    <div class="flex justify-center space-x-4 mt-6 mb-8">
+                        <button
+                            onclick="window.setActiveGame('apple')"
+                            class="px-6 py-2 rounded-lg font-bold transition ${
+                                activeGameId === 'apple' 
+                                ? 'bg-green-600 text-black shadow-lg shadow-green-700/50' 
+                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            }"
+                        >
+                            🍎 APPLE FORTUNE
+                        </button>
+                        <button
+                            onclick="window.setActiveGame('swamp')"
+                            class="px-6 py-2 rounded-lg font-bold transition ${
+                                activeGameId === 'swamp' 
+                                ? 'bg-green-600 text-black shadow-lg shadow-green-700/50' 
+                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            }"
+                        >
+                            🐸 SWAMP LAND
+                        </button>
+                    </div>
+                    
+                    ${signalCard}
+
+                    <div class="mt-8 p-4 bg-gray-950 rounded-xl max-w-xl mx-auto border border-red-700">
+                        <p class="text-sm text-red-400 text-center font-bold">
+                            :: DIQQAT :: **${window.PROMO_CODE}** ushbu promokod orqali ro'yxatdan o'tmasangiz, botning signallari ISHLAMAYDI.
+                        </p>
+                        <button
+                            onclick="window.handleRegisterClick(false)"
+                            class="w-full mt-3 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition"
+                        >
+                            ${getIcon('ExternalLink', 20, 'inline mr-2')}
+                            Ro'yxatdan O'tish Linkini Takror Ochish
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+    </script>
+</body>
+</html>
